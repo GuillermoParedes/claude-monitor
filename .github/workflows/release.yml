@@ -1,0 +1,60 @@
+name: release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - { runner: ubuntu-latest, goos: linux,   goarch: amd64, cgo: '0' }
+          - { runner: ubuntu-latest, goos: linux,   goarch: arm64, cgo: '0' }
+          - { runner: ubuntu-latest, goos: windows, goarch: amd64, cgo: '0', ext: .exe, ldflags: '-H windowsgui' }
+          - { runner: ubuntu-latest, goos: windows, goarch: arm64, cgo: '0', ext: .exe, ldflags: '-H windowsgui' }
+          # La bandeja de macOS usa Cocoa via cgo: hay que compilar en un Mac.
+          - { runner: macos-latest,  goos: darwin,  goarch: arm64, cgo: '1' }
+          - { runner: macos-latest,  goos: darwin,  goarch: amd64, cgo: '1' }
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: ${{ matrix.cgo }}
+        run: |
+          mkdir -p dist
+          VERSION="${GITHUB_REF_NAME#v}"
+          go build -trimpath \
+            -ldflags "-s -w -X main.version=${VERSION} ${{ matrix.ldflags }}" \
+            -o "dist/claude-monitor_${GOOS}_${GOARCH}${{ matrix.ext }}" ./cmd/claude-monitor
+      - uses: actions/upload-artifact@v4
+        with:
+          name: claude-monitor_${{ matrix.goos }}_${{ matrix.goarch }}
+          path: dist/*
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: rainmeter skin
+        run: (cd extras/rainmeter && zip -r ../../dist/claude-monitor_rainmeter-skin.zip ClaudeMonitor)
+      - name: checksums
+        run: (cd dist && sha256sum * > checksums.txt && cat checksums.txt)
+      - name: publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/* --title "$GITHUB_REF_NAME" --generate-notes

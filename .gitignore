@@ -1,0 +1,4 @@
+/dist/
+/claude-monitor
+/claude-monitor.exe
+*.test
