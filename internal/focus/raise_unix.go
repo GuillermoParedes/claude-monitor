@@ -58,3 +58,13 @@ func AllowForeground() {}
 func hideWindow(cmd *exec.Cmd) {}
 
 func sprintf(format string, a ...any) string { return fmt.Sprintf(format, a...) }
+
+func startInDir(dir, name string, args ...string) error {
+	cmd := exec.Command(name, args...)
+	cmd.Dir = dir
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	go cmd.Wait()
+	return nil
+}

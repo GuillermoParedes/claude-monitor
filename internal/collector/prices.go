@@ -37,7 +37,7 @@ func (t *priceTable) reload() bool {
 	st, err := os.Stat(paths.PricesFile())
 	if err != nil {
 		b, _ := json.MarshalIndent(DefaultPrices, "", "  ")
-		_ = os.WriteFile(paths.PricesFile(), append(b, '\n'), 0o644)
+		_ = os.WriteFile(paths.PricesFile(), append(b, '\n'), 0o600)
 		if st, err = os.Stat(paths.PricesFile()); err == nil {
 			t.mtime = st.ModTime().UnixNano()
 		}

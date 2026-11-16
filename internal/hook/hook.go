@@ -95,7 +95,7 @@ func Run(state string, stdin io.Reader) {
 
 	b, _ := json.Marshal(s)
 	tmp := file + ".tmp"
-	if os.WriteFile(tmp, b, 0o644) == nil {
+	if os.WriteFile(tmp, b, 0o600) == nil {
 		_ = os.Rename(tmp, file)
 	}
 }

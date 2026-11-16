@@ -278,7 +278,7 @@ func (s *State) Text() string {
 
 // LogTo redirige el log estandar a un archivo (para procesos sin consola).
 func LogTo(file string) {
-	f, err := os.OpenFile(file, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+	f, err := os.OpenFile(file, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
 	if err == nil {
 		log.SetOutput(f)
 	}

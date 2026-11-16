@@ -104,7 +104,7 @@ func (t *Tray) onReady() {
 
 	// El icono de notificacion necesita un archivo.
 	t.iconFile = filepath.Join(paths.DataDir(), "icon.png")
-	_ = os.WriteFile(t.iconFile, renderIcon("working", 40, 0), 0o644)
+	_ = os.WriteFile(t.iconFile, renderIcon("working", 40, 0), 0o600)
 
 	t.miPanel = systray.AddMenuItem(t.tr.openPanel, "")
 	systray.AddSeparator()
@@ -375,8 +375,30 @@ func (t *Tray) notify(title, msg string) {
 	on := t.notifyOn
 	t.mu.Unlock()
 	if on {
-		go beeep.Notify(title, msg, t.iconFile)
+		go beeep.Notify(safeText(title), safeText(msg), t.iconFile)
 	}
+}
+
+// safeText limpia el texto de una notificacion. En Windows, beeep/go-toast
+// puede caer a un script de PowerShell que inserta el texto en un here-string
+// expandible (@"..."@): un nombre de carpeta como "$(calc)" se ejecutaria.
+// Quitamos los caracteres con significado ahi y el cierre de CDATA del XML.
+func safeText(s string) string {
+	s = strings.ReplaceAll(s, "]]>", "")
+	s = strings.Map(func(r rune) rune {
+		switch r {
+		case '$', '`', '"', '\r', '\n', 0:
+			return ' '
+		}
+		if r < 0x20 {
+			return -1
+		}
+		return r
+	}, s)
+	if len(s) > 200 {
+		s = s[:200]
+	}
+	return s
 }
 
 func (t *Tray) notifications(s *collector.State, stale bool, age time.Duration, p5, p7 int, r5, r7 string) {

@@ -44,7 +44,7 @@ func Run(stdin io.Reader, stdout io.Writer) {
 		_ = paths.EnsureDirs()
 		b, _ := json.Marshal(collector.LimitsFile{Ts: time.Now().UnixMilli(), RateLimits: *in.RateLimits})
 		tmp := paths.LimitsFile() + ".tmp"
-		if os.WriteFile(tmp, b, 0o644) == nil {
+		if os.WriteFile(tmp, b, 0o600) == nil {
 			_ = os.Rename(tmp, paths.LimitsFile())
 		}
 	}

@@ -90,7 +90,7 @@ func (c *usageCache) save() {
 		return
 	}
 	tmp := paths.CacheFile() + ".tmp"
-	if os.WriteFile(tmp, b, 0o644) == nil && os.Rename(tmp, paths.CacheFile()) == nil {
+	if os.WriteFile(tmp, b, 0o600) == nil && os.Rename(tmp, paths.CacheFile()) == nil {
 		c.dirty = false
 	}
 }

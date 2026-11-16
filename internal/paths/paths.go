@@ -80,5 +80,5 @@ func BinaryName() string {
 
 // EnsureDirs crea los directorios de datos.
 func EnsureDirs() error {
-	return os.MkdirAll(SessionsDir(), 0o755)
+	return os.MkdirAll(SessionsDir(), 0o700)
 }

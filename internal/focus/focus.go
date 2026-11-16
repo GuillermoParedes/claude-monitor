@@ -223,12 +223,14 @@ func OpenTerminal(id string) error {
 	}
 	switch {
 	case paths.IsWSL():
-		return startDetached("wt.exe", "-w", "0", "nt", "--title", s.Project, "wsl.exe", "-d", paths.WSLDistro(), "--cd", s.Cwd)
+		return startDetached("wt.exe", "-w", "0", "nt", "--title", wtArg(s.Project), "wsl.exe", "-d", paths.WSLDistro(), "--cd", wtArg(s.Cwd))
 	case runtime.GOOS == "windows":
 		if _, err := exec.LookPath("wt.exe"); err == nil {
-			return startDetached("wt.exe", "-w", "0", "nt", "-d", s.Cwd)
+			return startDetached("wt.exe", "-w", "0", "nt", "-d", wtArg(s.Cwd))
 		}
-		return startDetached("cmd.exe", "/C", "start", "", "/D", s.Cwd, "cmd.exe")
+		// Sin Windows Terminal: consola nueva con el directorio de trabajo ya
+		// fijado (sin "cmd /C start ...": cmd interpretaria & | < > del path).
+		return startInDir(s.Cwd, "cmd.exe")
 	case runtime.GOOS == "darwin":
 		return startDetached("open", "-a", "Terminal", s.Cwd)
 	default:
@@ -244,6 +246,10 @@ func OpenTerminal(id string) error {
 		return errors.New("no terminal emulator found")
 	}
 }
+
+// wtArg escapa ';', que wt.exe usa para separar subcomandos: una carpeta con
+// "; new-tab cmd /c ..." en el nombre podria lanzar comandos extra.
+func wtArg(s string) string { return strings.ReplaceAll(s, ";", `\;`) }
 
 func startDetached(name string, args ...string) error {
 	cmd := exec.Command(name, args...)

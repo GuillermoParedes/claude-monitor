@@ -102,6 +102,10 @@ Claude Code ──hooks──────▶ claude-monitor hook      ─▶ ses
 - **Token counts are deduplicated** by message id. Claude Code writes one transcript line per content block, all carrying the same `usage`, and `--resume` copies history into a new file. Counting naively roughly doubles the totals.
 - **Transcripts are read incrementally**, from the byte offset where the last read stopped. A refresh normally takes a few milliseconds.
 
+## Security
+
+Everything stays local, and the dashboard is hardened against DNS rebinding, CSRF and clickjacking. See [SECURITY.md](SECURITY.md) for the threat model and known limitations.
+
 ## Build from source
 
 ```sh

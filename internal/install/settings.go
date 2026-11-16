@@ -251,7 +251,7 @@ func applySettings(file, bin string, install bool, prevStatus string) (wrapped s
 	pretty.WriteByte('\n')
 
 	if raw != nil {
-		_ = os.WriteFile(file+".claude-monitor.bak", raw, 0o644)
+		_ = os.WriteFile(file+".claude-monitor.bak", raw, 0o600)
 	}
 	return wrapped, writeThroughSymlink(file, pretty.Bytes())
 }
@@ -280,9 +280,15 @@ func writeThroughSymlink(file string, data []byte) error {
 	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 		return err
 	}
+	// Conservamos los permisos que tenia el archivo del usuario.
+	mode := os.FileMode(0o644)
+	if st, err := os.Stat(target); err == nil {
+		mode = st.Mode().Perm()
+	}
 	tmp := target + ".tmp"
-	if err := os.WriteFile(tmp, data, 0o644); err != nil {
+	if err := os.WriteFile(tmp, data, mode); err != nil {
 		return err
 	}
+	_ = os.Chmod(tmp, mode) // WriteFile respeta la umask
 	return os.Rename(tmp, target)
 }

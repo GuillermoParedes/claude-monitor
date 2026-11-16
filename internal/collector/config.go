@@ -44,5 +44,5 @@ func SaveConfig(c Config) error {
 		return err
 	}
 	b, _ := json.MarshalIndent(c, "", "  ")
-	return os.WriteFile(paths.ConfigFile(), append(b, '\n'), 0o644)
+	return os.WriteFile(paths.ConfigFile(), append(b, '\n'), 0o600)
 }
