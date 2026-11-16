@@ -298,9 +298,13 @@ $("openBrowser").onclick = () => { window.open(location.origin + "/", "_blank");
 if (PANEL) {
   $("openBrowser").hidden = false;
   // Comportamiento de panel flotante: se cierra al perder el foco o con Esc.
-  let armed = false;
-  setTimeout(() => armed = true, 600);
-  window.addEventListener("blur", () => { if (armed && $("menu").hidden) window.close(); });
+  // Solo se cierra si llego a tener el foco: si Windows la abre sin foco (foco
+  // robado por otra app), debe quedarse visible en vez de desaparecer sola.
+  let focusedAt = document.hasFocus() ? Date.now() : 0;
+  window.addEventListener("focus", () => { focusedAt = Date.now(); });
+  window.addEventListener("blur", () => {
+    if (focusedAt && Date.now() - focusedAt > 400 && $("menu").hidden) window.close();
+  });
   document.addEventListener("keydown", e => { if (e.key === "Escape") window.close(); });
 } else {
   $("openBrowser").hidden = true;

@@ -60,3 +60,7 @@ func systemLang() string {
 func registerNotifier() {}
 
 func promoteIcon(done func() bool, mark func()) {}
+
+func hasDesktopWidget() bool { return false }
+
+func toggleDesktopWidget() {}

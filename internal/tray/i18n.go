@@ -12,7 +12,7 @@ type strs struct {
 	noServer, plan, planNone, week, today, permission, sessionsCount             string
 	working, waiting, idle, off, staleFmt                                        string
 	staleMsg, waitTitle, waitMsg, doneTitle, doneMsg, ctxTitle, ctxMsg           string
-	win5, winWeek, limTitle, resetsIn                                            string
+	win5, winWeek, limTitle, resetsIn, widget                                    string
 }
 
 var en = strs{
@@ -26,6 +26,7 @@ var en = strs{
 	doneTitle: "%s: finished", doneMsg: "Claude Code finished (%d min) and is waiting for you.",
 	ctxTitle: "%s: context at %d%%", ctxMsg: "Consider /compact or a fresh session soon.",
 	win5: "5-hour window", winWeek: "weekly limit", limTitle: "Plan: %s at %d%%", resetsIn: "Resets in %s.",
+	widget: "Show / hide desktop widget",
 }
 
 var es = strs{
@@ -39,6 +40,7 @@ var es = strs{
 	doneTitle: "%s: terminó", doneMsg: "Claude Code terminó (%d min) y espera tu siguiente mensaje.",
 	ctxTitle: "%s: contexto al %d%%", ctxMsg: "Considera /compact o una sesión nueva pronto.",
 	win5: "ventana de 5h", winWeek: "límite semanal", limTitle: "Plan: %s al %d%%", resetsIn: "Se reinicia en %s.",
+	widget: "Mostrar / ocultar widget de escritorio",
 }
 
 func (s strs) status(st string, age time.Duration) string {

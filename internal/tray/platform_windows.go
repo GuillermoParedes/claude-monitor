@@ -160,3 +160,52 @@ func promoteIcon(done func() bool, mark func()) {
 func equalFoldPath(a, b string) bool {
 	return strings.EqualFold(filepath.Clean(a), filepath.Clean(b))
 }
+
+const rainmeterExe = `C:\Program Files\Rainmeter\Rainmeter.exe`
+
+// hasDesktopWidget: Rainmeter instalado y el skin ClaudeMonitor presente.
+func hasDesktopWidget() bool {
+	if _, err := os.Stat(rainmeterExe); err != nil {
+		return false
+	}
+	return rainmeterSkinDir() != ""
+}
+
+// rainmeterSkinDir lee SkinPath de Rainmeter.ini (UTF-16) o usa el default.
+func rainmeterSkinDir() string {
+	var cands []string
+	if b, err := os.ReadFile(filepath.Join(os.Getenv("APPDATA"), "Rainmeter", "Rainmeter.ini")); err == nil {
+		txt := decodeUTF16(b)
+		for _, line := range strings.Split(txt, "\n") {
+			line = strings.TrimSpace(line)
+			if strings.HasPrefix(strings.ToLower(line), "skinpath=") {
+				cands = append(cands, strings.TrimSpace(line[len("skinpath="):]))
+			}
+		}
+	}
+	home, _ := os.UserHomeDir()
+	cands = append(cands, filepath.Join(home, "Documents", "Rainmeter", "Skins"))
+	for _, c := range cands {
+		if _, err := os.Stat(filepath.Join(c, "ClaudeMonitor", "ClaudeMonitor.ini")); err == nil {
+			return c
+		}
+	}
+	return ""
+}
+
+func decodeUTF16(b []byte) string {
+	if len(b) >= 2 && b[0] == 0xFF && b[1] == 0xFE {
+		u := make([]uint16, 0, len(b)/2)
+		for i := 2; i+1 < len(b); i += 2 {
+			u = append(u, uint16(b[i])|uint16(b[i+1])<<8)
+		}
+		return windows.UTF16ToString(u)
+	}
+	return string(b)
+}
+
+// toggleDesktopWidget carga/descarga el skin: no ocupa el escritorio hasta que
+// lo pides, y como es una sola config nunca aparece dos veces.
+func toggleDesktopWidget() {
+	_ = exec.Command(rainmeterExe, "!ToggleConfig", "ClaudeMonitor", "ClaudeMonitor.ini").Start()
+}

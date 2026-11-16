@@ -10,6 +10,7 @@ package tray
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -48,6 +49,8 @@ type Tray struct {
 	miPanel, miSummary, miPlan, miCost *systray.MenuItem
 	miSessions                         *systray.MenuItem
 	miNotify, miQuit, miData           *systray.MenuItem
+	miWidget                           *systray.MenuItem
+	panelOpened                        time.Time // ultima vez que lanzamos la ventana
 	sess                               [maxSessionItems]*sessionItem
 	notifyOn                           bool
 	iconFile                           string
@@ -63,6 +66,16 @@ type Tray struct {
 
 // Run bloquea hasta que el usuario elige Salir.
 func Run(base string, onQuit func()) {
+	if !singleInstance() {
+		// Ya hay un icono: no mostramos un segundo. Si nos lanzaron a mano,
+		// lo util es abrir el panel de la instancia existente.
+		log.Printf("tray: another instance is running; opening its panel instead")
+		OpenPanel(base)
+		if onQuit != nil {
+			onQuit()
+		}
+		return
+	}
 	cfg := collector.LoadConfig()
 	t := &Tray{
 		base: strings.TrimRight(base, "/"), onQuit: onQuit,
@@ -116,6 +129,11 @@ func (t *Tray) onReady() {
 		go t.sessionLoop(it)
 	}
 	systray.AddSeparator()
+	if hasDesktopWidget() {
+		t.miWidget = systray.AddMenuItem(t.tr.widget, "")
+	} else {
+		t.miWidget = &systray.MenuItem{ClickedCh: make(chan struct{})}
+	}
 	t.miNotify = systray.AddMenuItemCheckbox(t.tr.notifications, "", t.notifyOn)
 	t.miData = systray.AddMenuItem(t.tr.dataFolder, "")
 	systray.AddSeparator()
@@ -154,6 +172,8 @@ func (t *Tray) menuLoop() {
 			cfg := collector.LoadConfig()
 			cfg.Notifications = &on
 			_ = collector.SaveConfig(cfg)
+		case <-t.miWidget.ClickedCh:
+			toggleDesktopWidget()
 		case <-t.miData.ClickedCh:
 			openPath(paths.DataDir())
 		case <-t.miQuit.ClickedCh:
@@ -196,6 +216,9 @@ func (t *Tray) post(path string) {
 // --- panel -------------------------------------------------------------------
 
 func (t *Tray) togglePanel() {
+	t.mu.Lock()
+	opening := time.Since(t.panelOpened) < 4*time.Second
+	t.mu.Unlock()
 	var seen struct {
 		Ms int64 `json:"ms"`
 	}
@@ -203,14 +226,24 @@ func (t *Tray) togglePanel() {
 		_ = json.NewDecoder(resp.Body).Decode(&seen)
 		resp.Body.Close()
 		if seen.Ms >= 0 && seen.Ms < 2500 {
-			t.post("/api/panel/close")
+			t.post("/api/panel/close") // esta abierto: el clic lo cierra
 			return
 		}
+	}
+	if opening {
+		return // la ventana se esta abriendo (aun no carga): no abrir otra
 	}
 	t.openPanel()
 }
 
 func (t *Tray) openPanel() {
+	t.mu.Lock()
+	if time.Since(t.panelOpened) < 4*time.Second {
+		t.mu.Unlock()
+		return
+	}
+	t.panelOpened = time.Now()
+	t.mu.Unlock()
 	allowForeground()
 	openPanelWindow(t.base + "/?panel=1")
 }
