@@ -19,7 +19,7 @@ func TestSafeTextNeutralizesPowerShellAndXML(t *testing.T) {
 			}
 		}
 	}
-	if got := safeText("casper: espera permiso"); got != "casper: espera permiso" {
+	if got := safeText("myproject: espera permiso"); got != "myproject: espera permiso" {
 		t.Errorf("normal text altered: %q", got)
 	}
 }
